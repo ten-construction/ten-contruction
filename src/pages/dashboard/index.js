@@ -148,7 +148,7 @@ function Dashboard(){
           totalMandays += parseFloat(validation.data().total_mandays)
         }
 
-        if (totalMandays > 1) {
+        if (totalMandays > 1 && (values.override === false || values.override === undefined)) {
           error("Total hari kerja hari ini tidak boleh melebihi 1.")
           setIsSaveAbsenceOnProcess(false)
           return
@@ -745,11 +745,17 @@ function Dashboard(){
         </Form.Item>
 
         <Form.Item
-          label="Hari Kerja"
           name="hari"
           valuePropName="checked"
         >
           <Checkbox>0.5 Hari Kerja</Checkbox>
+        </Form.Item>
+
+        <Form.Item
+          name="override"
+          valuePropName="checked"
+        >
+          <Checkbox>Override</Checkbox>
         </Form.Item>
 
         <Form.Item label={null}>
