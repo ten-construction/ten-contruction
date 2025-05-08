@@ -8,7 +8,7 @@ import { toRupiahFormat } from "../lib/IntegerHelper";
 
 const { Option } = Select;
 
-function TableData({ dataSource, loading, columns, handleDeleteProp, popUpConfirmMessage, isHaveDetail, showDetailProp, handleUpdateEmploymentProp, employmentData}){
+function TableData({ dataSource, loading, columns, handleDeleteProp, popUpConfirmMessage, isHaveDetail, showDetailProp, handleUpdateEmploymentProp, employmentData, handleUpdateProp}){
     const [searchText, setSearchText] = useState(''); 
     const [searchedColumn, setSearchedColumn] = useState('');
     const [columnData, setColumnData] = useState([]);
@@ -62,11 +62,17 @@ function TableData({ dataSource, loading, columns, handleDeleteProp, popUpConfir
       newColumnData = [...newColumnData, {
         title: 'Aksi',
         dataIndex: 'aksi  ',
-        width: '10%',
+        width: '25%',
         render: (_, record) =>
-          <Popconfirm title={ popUpConfirmMessage || "Sure to delete?" } onConfirm={() => handleDelete(record.id)}>
-            <Button danger>Delete</Button>
-          </Popconfirm>
+          <>
+            <Popconfirm title={ popUpConfirmMessage || "Sure to delete?" } onConfirm={() => handleDelete(record.id)}>
+              <Button danger>Delete</Button>
+            </Popconfirm>
+
+            {handleUpdateProp !== undefined && 
+              <Button style={{display: "inline", marginLeft: 8}} onClick={() => handleUpdateProp(record)}>Update</Button>
+            }
+          </>
       }]
 
       if (isHaveDetail) {

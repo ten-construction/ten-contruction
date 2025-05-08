@@ -6,7 +6,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { useEffect, useState } from "react";
 import { Button, Form, Input, InputNumber, Modal, message, Spin} from 'antd';
 
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 function Employment(){
@@ -17,6 +17,8 @@ function Employment(){
     const [isSaveEmploymentProcess, setIsSaveEmploymentProcess] = useState(false)
   
     const [loading, setLoading] = useState(false)
+
+    const [isUpdate, setIsUpdate] = useState(false)
 
     const fetchEmployments = async () => {
         setLoading(true)
@@ -71,22 +73,47 @@ function Employment(){
         setIsSaveEmploymentProcess(true)
 
         try {
-            // Check duplicate project name
-            if (employments.map(itm => itm.nama).indexOf(values.name) >= 0) {
-                error(`Pekerjaan '${values.name}'  sudah ada, mohon masukan nama pekerjaan lain`);
-                setIsSaveEmploymentProcess(false)
-                return;
+            if (values.id !== undefined) {
+                // Update existing employment
+                const employmentRef = doc(db, 'employments', values.id)
+                
+                const employmentData = await getDoc(employmentRef);
+                if (!employmentData.exists()) {
+                    error(`Pekerjaan '${values.name}' tidak dapat ditemukan, tidak dapat mengubah!`);
+                    setIsSaveEmploymentProcess(false)
+                    return;
+                }
+
+                // Check duplicate project name
+                if (employments.map(itm => itm.nama).filter(itm => itm !== employmentData.data().name).indexOf(values.name) >= 0) {
+                    error(`Pekerjaan '${values.name}' sudah ada, mohon masukan nama pekerjaan lain`);
+                    setIsSaveEmploymentProcess(false)
+                    return;
+                }
+
+                await updateDoc(employmentRef, {
+                    name: values.name,
+                    salary: values.salary,
+                    updated_at: now
+                });
+            }else{
+                // Check duplicate project name
+                if (employments.map(itm => itm.nama).indexOf(values.name) >= 0) {
+                    error(`Pekerjaan '${values.name}' sudah ada, mohon masukan nama pekerjaan lain`);
+                    setIsSaveEmploymentProcess(false)
+                    return;
+                }
+
+                // Add new employment
+                await addDoc(collection(db, "employments"), {
+                    name: values.name,
+                    salary: values.salary,
+                    created_at: now,
+                    updated_at: now
+                });
             }
 
-            // // Add new project into Firestore
-            await addDoc(collection(db, "employments"), {
-                name: values.name,
-                salary: values.salary,
-                created_at: now,
-                updated_at: now
-            });
-
-            // // Refetch employments to refresh table
+            // Refetch employments to refresh table
             fetchEmployments();
 
             form.resetFields();
@@ -102,16 +129,34 @@ function Employment(){
         setIsSaveEmploymentProcess(false)
     };
 
+    const handleUpdate = async (record) => {
+        setIsUpdate(true)
+
+        form.setFieldsValue({
+            id: record.id,
+            name: record.nama,
+            salary: record.salary_integer
+        });
+        
+        setModal2Open(true)
+    }
+
+    const handleInsertPopup = () => {
+        setIsUpdate(false)
+        form.resetFields()
+        setModal2Open(true)
+    }
+
     return (
         <>
             {contextHolder}
 
-            <Button style={{marginBottom: 30}} type="primary" onClick={() => setModal2Open(true)}>
+            <Button style={{marginBottom: 30}} type="primary" onClick={() => handleInsertPopup()}>
                 Pekerjaan Baru
             </Button>
 
             <Modal
-                title="Masukan pekerjaan baru"
+                title={isUpdate ? "Ubah Pekerjaan" : "Masukan pekerjaan baru"}
                 centered
                 open={modal2Open}
                 onOk={() => setModal2Open(false)}
@@ -144,6 +189,10 @@ function Employment(){
                     autoComplete="off"
                     layout="vertical"
                 >
+                    <Form.Item name="id" style={{ display: 'none' }}>
+                        <Input type="hidden" />
+                    </Form.Item>
+
                     <Form.Item
                         label="Nama Pekerjaan"
                         name="name"
@@ -166,6 +215,7 @@ function Employment(){
                 columns={['nama', 'gaji', 'tanggal_dibuat', 'tanggal_diupdate']}
                 handleDeleteProp={handleDelete}
                 loading={loading}
+                handleUpdateProp={handleUpdate}
             />
         </>
     )

@@ -255,6 +255,7 @@ function Dashboard(){
 
   const handleDelete = async (userProjectMandayId) => {
     const now = new Date()
+    const currentFormProject = formProject.getFieldsValue();
 
     try {
       const absenceRef = doc(db, 'user_project_mandays', userProjectMandayId)
@@ -296,7 +297,7 @@ function Dashboard(){
       
       await deleteDoc(absenceRef);
 
-      setProjectMandays([])
+      fetchUserProjectManday(currentFormProject.seeProject)
 
       messageApi.success(`Absence deleted successfully!`);
     } catch (e) {
