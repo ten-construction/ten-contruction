@@ -186,6 +186,7 @@ function TableData({ dataSource, loading, columns, handleDeleteProp, popUpConfir
         columns={columnData}
         loading={loading}
         scroll={{ x: 'max-content' }}
+        pagination={false}
       />
     );
 }
