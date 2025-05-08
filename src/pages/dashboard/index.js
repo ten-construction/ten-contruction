@@ -25,6 +25,7 @@ function Dashboard(){
   
   const [isSaveAbsenceOnProcess, setIsSaveAbsenceOnProcess] = useState(false)
   const [isExportProcess, setIsExportProcess] = useState(false)
+  const [isPurgeProcess, setIsPurgeProsess] = useState(false)
   
   const [loading, setLoading] = useState(false)
 
@@ -110,7 +111,7 @@ function Dashboard(){
     const projectValue = form.getFieldValue('project');
     
     try {
-        let action = 'added'
+        let action = 'ditambah'
         const userRef = doc(db, 'users', values.user);
         const projectRef = doc(db, 'projects', values.project);
         
@@ -167,7 +168,7 @@ function Dashboard(){
         let absenceIdSnap = '';
 
         if (absenceSnapshot.docs.length > 0) {  
-          action = 'updated'
+          action = 'diubah'
           for (const document of absenceSnapshot.docs) {
             // if (isToday(document.data().updated_at.seconds)) {
             //   error("User telah melakukan absensi hari ini.")
@@ -239,10 +240,10 @@ function Dashboard(){
         }
 
         setProjectMandays([]);
-        messageApi.success(`Absence ${action} successfully!`);
+        messageApi.success(`Absence telah ${action}!`);
     } catch (err) {
         console.log(err);
-        error('Failed to add absence!');
+        error('Gagal untuk menambah absence!');
     } finally {
       form.resetFields();
       form.setFieldsValue({ project: projectValue });
@@ -261,7 +262,7 @@ function Dashboard(){
       const absenceRef = doc(db, 'user_project_mandays', userProjectMandayId)
       const absenceSnap = await getDoc(absenceRef)
       if (!absenceSnap.exists()) {
-        error('Selected absence data is not found!');
+        error('Absence yang dipilih tidak ditemukan!');
         return;
       }
 
@@ -299,7 +300,7 @@ function Dashboard(){
 
       fetchUserProjectManday(currentFormProject.seeProject)
 
-      messageApi.success(`Absence deleted successfully!`);
+      messageApi.success(`Absence telah dihapus!`);
     } catch (e) {
       error(`Error deleting user: ${e}`);
     }
@@ -311,7 +312,7 @@ function Dashboard(){
     const absenceDetailRef = doc(db, 'user_project_manday_logs', userProjectMandayLogId)
     const absenceDetailSnap = await getDoc(absenceDetailRef);
     if (!absenceDetailSnap.exists()) {
-      error(`Absence detail not found', please create it first`);
+      error(`Absence detail tidak ditemukan', mohon buat terlebih dahulu`);
       return;
     }
 
@@ -366,7 +367,7 @@ function Dashboard(){
 
     await showDetail(record, true)
             
-    messageApi.success('Absence detail successfully deleted!');
+    messageApi.success('Absence detail telah dihapus!');
   }
 
   const showDetail = async (record, fromFunction) => {
@@ -407,6 +408,8 @@ function Dashboard(){
   }
 
   const handleExport = async () => {
+    const now = new Date();
+
     setIsExportProcess(true)
 
     try {
@@ -664,6 +667,11 @@ function Dashboard(){
       const fileData = new Blob([excelBuffer], { type: "application/octet-stream" });
     
       saveAs(fileData, `Absensi_${getFormattedDate()}.xlsx`);
+
+      await addDoc(collection(db, "export_histories"), {
+        created_at: now
+      });
+
     } catch (error) {
       console.error(error);
       messageApi.error('Gagal export data!');
@@ -679,22 +687,91 @@ function Dashboard(){
     }
   }
 
+  const handePurge = async () => {
+    setIsPurgeProsess(true)
+
+    let isHasExportedToday = false
+    const { startOfDay, endOfDay } = getTodayStartEndDate()
+
+    const q = query(
+      collection(db, 'export_histories'),
+      where('created_at', '>=', Timestamp.fromDate(new Date(startOfDay))),
+      where('created_at', '<=', Timestamp.fromDate(new Date(endOfDay)))
+    )
+    const exportHistories = await getDocs(q);
+
+    for (const item of exportHistories.docs) {
+      isHasExportedToday = true
+    }
+
+    if (!isHasExportedToday) {
+      error('Kamu belum melakukan export hari ini, mohon export terlebih dahulu!');
+      setIsPurgeProsess(false)
+      return;
+    }
+
+    // [BEGIN] Delete all absence and export histories data
+    const absenceSnap = await getDocs(collection(db, 'user_project_mandays'))
+    for (const item of absenceSnap.docs) {
+        await deleteDoc(doc(db, 'user_project_mandays', item.id));
+    }
+
+    const absenceLogSnap = await getDocs(collection(db, 'user_project_manday_logs'))
+    for (const item of absenceLogSnap.docs) {
+        await deleteDoc(doc(db, 'user_project_manday_logs', item.id));
+    }
+
+    const absenceTotalSnap = await getDocs(collection(db, 'user_project_mandays_total'))
+    for (const item of absenceTotalSnap.docs) {
+        await deleteDoc(doc(db, 'user_project_mandays_total', item.id));
+    }
+
+    const exportHistorySnap = await getDocs(collection(db, 'export_histories'))
+    for (const item of exportHistorySnap.docs) {
+        await deleteDoc(doc(db, 'export_histories', item.id));
+    }
+    // [END] Delete all absence and export histories data
+            
+    messageApi.success('Proses purge telah selesai, data absensi telah di reset!');
+
+    formProject.resetFields(['seeProject'])
+    setProjectMandays([]);
+    setIsPurgeProsess(false)
+  }
+
   return (
     <>
       {contextHolder}
 
       {
+        isPurgeProcess && 
+        <Button disabled style={{float: 'right'}} danger variant="solid">
+          Purge Data <Spin indicator={<LoadingOutlined spin />} />
+        </Button>
+      }
+      {
+        !isPurgeProcess && 
+        <Button style={{float: 'right'}} danger variant="solid" onClick={() => handePurge()}>
+            Purge Data
+        </Button>
+      }
+
+      {
         isExportProcess && 
-        <Button disabled style={{float: 'right'}} color="green" variant="solid" onClick={() => handleExport()}>
-          <Spin indicator={<LoadingOutlined spin />} />
+        <Button disabled style={{float: 'right', marginRight: 10}} color="green" variant="solid">
+          Export XLSX <Spin indicator={<LoadingOutlined spin />} />
         </Button>
       }
       {
         !isExportProcess && 
-        <Button style={{float: 'right'}} color="green" variant="solid" onClick={() => handleExport()}>
+        <Button style={{float: 'right', marginRight: 10}} color="green" variant="solid" onClick={() => handleExport()}>
             Export XLSX
         </Button>
       }
+
+      <br/>
+      <br/>
+      <br/>
 
       <Form
         form={form}
