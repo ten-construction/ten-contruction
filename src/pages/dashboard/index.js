@@ -656,6 +656,13 @@ function Dashboard(){
     }
   };
 
+  const onSelectUserEnter = async (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      form.submit(); 
+    }
+  }
+
   return (
     <>
       {contextHolder}
@@ -710,6 +717,7 @@ function Dashboard(){
                 );
             }}
             options={users.map(itm => ({value: itm.id, label: itm.name}))}
+            onInputKeyDown={onSelectUserEnter}
           />
         </Form.Item>
 
