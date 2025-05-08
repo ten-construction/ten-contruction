@@ -58,7 +58,8 @@ function Dashboard(){
     const querySnapshot = await getDocs(q)
 
     let absenceProjects = []
-    for (const doc of querySnapshot.docs) {
+    for (let index = 0; index < querySnapshot.docs.length; index++) {
+      const doc = querySnapshot.docs[index];
       
       const userData = await getDoc(doc.data().user_id)
       const projectData = await getDoc(doc.data().project_id)
@@ -69,6 +70,7 @@ function Dashboard(){
       }
 
       absenceProjects.push({
+        no: index + 1,
         id: doc.id,
         project: projectData.data().name,
         user: userData.data().name,
@@ -382,8 +384,11 @@ function Dashboard(){
 
     const absenceLogSnap = await getDocs(q)
 
-    for (const document of absenceLogSnap.docs) {
+    for (let index = 0; index < absenceLogSnap.docs.length; index++) {
+      const document = absenceLogSnap.docs[index];
+
       absenceDetailRes.push({
+        no: index + 1,
         id: document.id,
         user: record.user,
         project: record.project,
@@ -424,7 +429,9 @@ function Dashboard(){
 
           let totalSalaryProject = 0
     
-          for (const item of absenceSnapShot.docs) {
+          for (let index = 0; index < absenceSnapShot.docs.length; index++) {
+            const item = absenceSnapShot.docs[index];
+
             const userSnap = await getDoc(item.data().user_id)
     
             let employment = ''
@@ -436,6 +443,7 @@ function Dashboard(){
             }
     
             projects[project.data().name].push({
+              no: index + 1,
               nama: userSnap.data().name,
               jabatan: employment,
               gaji: salary,
@@ -447,6 +455,7 @@ function Dashboard(){
           }
 
           projects[project.data().name].push({
+            no: "",
             nama: "",
             jabatan: "",
             gaji: "",
@@ -460,7 +469,7 @@ function Dashboard(){
       const merges = [];
       let rowIndex = 0;
     
-      const headers = ["NAMA", "JABATAN", "GAJI HARIAN", "HARI KERJA", "JUMLAH"];
+      const headers = ["NO", "NAMA", "JABATAN", "GAJI HARIAN", "HARI KERJA", "JUMLAH"];
     
       Object.entries(projects).forEach(([projectName, records]) => {
         // Add merged title row
@@ -478,6 +487,7 @@ function Dashboard(){
         // Add data rows
         records.forEach((record) => {
           aoa.push([
+            record.no,
             record.nama, 
             record.jabatan, 
             {
@@ -548,7 +558,10 @@ function Dashboard(){
       let absenceTotalData = []
       let absenceTotalSalary = 0
       const absenceTotalSnap = await getDocs(absenceTotalQuery)
-      for (const absenceTotal of absenceTotalSnap.docs) {
+
+      for (let index = 0; index < absenceTotalSnap.docs.length; index++) {
+        const absenceTotal = absenceTotalSnap.docs[index];
+
         const userSnap = await getDoc(absenceTotal.data().user_id)
     
         let employment = ''
@@ -558,6 +571,7 @@ function Dashboard(){
         }
 
         absenceTotalData.push({
+          "NO": index + 1,
           "NAMA": userSnap.data().name,
           "JABATAN" : employment,
           "GAJI HARIAN": {
@@ -577,6 +591,7 @@ function Dashboard(){
       }
 
       absenceTotalData.push({
+        "NO": "",
         "NAMA": "",
         "JABATAN" : "",
         "GAJI HARIAN": "",
@@ -822,7 +837,7 @@ function Dashboard(){
             
       <TableData 
           dataSource={projectMandays} 
-          columns={['project', 'user', 'hari', 'gaji', 'tanggal_dibuat', 'tanggal_diupdate']}
+          columns={['no', 'project', 'user', 'hari', 'gaji', 'tanggal_dibuat', 'tanggal_diupdate']}
           handleDeleteProp={handleDelete}
           isHaveDetail={true}
           loading={loading}
@@ -839,7 +854,7 @@ function Dashboard(){
       >
         <TableData 
             dataSource={absenceDetail}
-            columns={['user','project','tanggal_dibuat']}
+            columns={['no', 'user','project','tanggal_dibuat']}
             handleDeleteProp={handleDeleteDetail}
             loading={loading}
         />
