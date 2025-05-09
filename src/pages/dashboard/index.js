@@ -109,6 +109,7 @@ function Dashboard(){
     const { startOfDay, endOfDay } = getTodayStartEndDate()
     
     const projectValue = form.getFieldValue('project');
+    const overrideValue = form.getFieldValue('override');
     
     try {
         let action = 'ditambah'
@@ -246,7 +247,10 @@ function Dashboard(){
         error('Gagal untuk menambah absence!');
     } finally {
       form.resetFields();
-      form.setFieldsValue({ project: projectValue });
+      form.setFieldsValue({ 
+        project: projectValue,
+        override: overrideValue
+      });
 
       formProject.resetFields(['seeProject'])
 
